@@ -1,0 +1,19 @@
+# Claude Code 個人設定(チーム共有の settings.json とは別)
+.claude/settings.local.json
+
+# 秘密情報
+.env
+.env.*
+secrets/
+
+# 依存関係・ビルド成果物
+node_modules/
+dist/
+build/
+
+# ログ
+*.log
+
+# clasp（scriptIdは秘密情報ではないが環境固有のため各自 clasp create/clone で生成する）
+.clasp.json
+.claspignore

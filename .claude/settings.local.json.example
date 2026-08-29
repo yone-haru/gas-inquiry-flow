@@ -1,0 +1,12 @@
+{
+  "//": "個人用設定の例。settings.local.json にリネームして使う(gitignore 済み)。チーム共有の settings.json より優先される。",
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)"
+    ]
+  },
+  "env": {
+    "MY_LOCAL_VAR": "value"
+  }
+}

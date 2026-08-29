@@ -1,0 +1,4 @@
+{
+  "scriptId": "ここに clasp create / clasp clone で得た Script ID を入れる",
+  "rootDir": "./src"
+}
