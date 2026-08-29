@@ -55,6 +55,7 @@ const projectGlobals = {
   getConfig_: "readonly",
   // businessDays.js
   addBusinessDays_: "readonly",
+  formatDateYmd_: "readonly",
   // inquiry.js
   formatManagementId_: "readonly",
   getMaxManagementIdSeq_: "readonly",
@@ -63,15 +64,24 @@ const projectGlobals = {
   pickNextRoundRobinStaff_: "readonly",
   assignStaff_: "readonly",
   calculateDueDate_: "readonly",
+  onFormSubmitHandler: "readonly",
   // logger.js
   recordLog_: "readonly",
+  DEFAULT_LOG_RETENTION_ROWS: "readonly",
+  // notify.js
+  expandTemplate_: "readonly",
+  getTemplate_: "readonly",
+  sendEmail_: "readonly",
+  sendSlack_: "readonly",
+  dispatchNotification_: "readonly",
+  sendNotification_: "readonly",
   // setup.js
   getSheetOrThrow_: "readonly",
   runInitialSetup: "readonly",
   checkConfigMenu: "readonly",
   resetTriggersMenu: "readonly",
   generateSampleData: "readonly",
-  // main.js / reminder.js / notify.js（トリガーのハンドラ関数名。setup.js から文字列参照される）
+  // main.js / reminder.js（トリガーのハンドラ関数名。setup.js から文字列参照される）
   onOpen: "readonly",
   onEdit: "readonly",
   sendTestNotificationMenu: "readonly",

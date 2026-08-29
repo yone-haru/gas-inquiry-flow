@@ -18,10 +18,65 @@ function onOpen() {
 }
 
 /**
- * カスタムメニュー「テスト通知を送る」の実体。Day2（notify.js）で実装する。
+ * カスタムメニュー「テスト通知を送る」の実体。現在の設定で実際に1件だけ送信し、通知が届くかを確認する。
+ * テストモードの設定に関わらず実送信する（sendNotification_ ではなく dispatchNotification_ を直接呼ぶ）。
+ * これが「テスト通知を送る」の存在意義そのものであるため。
  */
 function sendTestNotificationMenu() {
-  SpreadsheetApp.getUi().alert(MENU_NAME, "この機能は Day2 で実装予定です（notify.js）。", SpreadsheetApp.getUi().ButtonSet.OK);
+  var ui = SpreadsheetApp.getUi();
+  var config;
+  try {
+    config = getConfig_();
+  } catch (err) {
+    ui.alert(MENU_NAME, "設定シートに問題があるため送信できません。\n" + String(err), ui.ButtonSet.OK);
+    return;
+  }
+
+  var recipientEmail = config.adminEmail || Session.getActiveUser().getEmail();
+  if (!recipientEmail) {
+    ui.alert(MENU_NAME, "送信先が特定できません。「設定」シートの「管理者メールアドレス」を入力してから再実行してください。", ui.ButtonSet.OK);
+    return;
+  }
+
+  var recipient = { name: "テスト送信先", email: recipientEmail, slackMention: "" };
+  var placeholders = {
+    管理ID: "TEST-0000",
+    お名前: "テスト太郎",
+    種別: "その他",
+    内容: "これはテスト通知です。",
+    対応期限: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"),
+    担当者名: recipient.name,
+    シートURL: SpreadsheetApp.getActive().getUrl(),
+  };
+
+  try {
+    var subject = expandTemplate_("【テスト通知】この文面が届いていれば設定は正常です", placeholders, config.logRetentionRows);
+    var body = expandTemplate_(
+      "これはカスタムメニュー「テスト通知を送る」から送信したテスト通知です。\n\nシートURL: {{シートURL}}",
+      placeholders,
+      config.logRetentionRows
+    );
+    var results = dispatchNotification_(subject, body, recipient, config);
+    var allOk = results.length > 0 && results.every(function (r) {
+      return r.success;
+    });
+    var summary = results
+      .map(function (r) {
+        return r.method + ":" + (r.success ? "成功" : "失敗");
+      })
+      .join(", ");
+    recordLog_("テスト通知", 1, allOk ? LOG_RESULT.SUCCESS : LOG_RESULT.FAILURE, summary || "送信対象なし（通知方法の設定を確認してください）", config.logRetentionRows);
+    ui.alert(
+      MENU_NAME,
+      allOk
+        ? recipientEmail + " 宛にテスト通知を送信しました。届いているか確認してください。"
+        : "送信できなかった項目があります（" + summary + "）。実行ログシートを確認してください。",
+      ui.ButtonSet.OK
+    );
+  } catch (err) {
+    recordLog_("テスト通知", 1, LOG_RESULT.FAILURE, String(err), config.logRetentionRows);
+    ui.alert(MENU_NAME, "テスト通知の送信中にエラーが発生しました。\n" + String(err), ui.ButtonSet.OK);
+  }
 }
 
 /**

@@ -140,10 +140,69 @@ function calculateDueDate_(receivedAt, type, config) {
 }
 
 /**
- * フォーム送信時トリガー本体。Day2（F-02）で実装する。
+ * フォーム送信時トリガー本体（F-02）。管理ID採番・担当者割当・期限計算を行い、担当者に
+ * 「新規受付」通知を送る。
+ *
+ * - LockService で排他制御する（要件定義書6.3章。日次リマインドと同時に走った場合の競合を防ぐ）。
+ * - J列（初回通知日時）が既に入っていれば処理済みとみなしてスキップする（要件定義書6.4章の冪等性）。
+ * - 失敗しても例外を外に投げず、ログに記録して終わる（要件定義書6.5章。フォーム送信トリガー全体を
+ *   止めないため）。
  * @param {Object} e フォーム送信イベント
  */
 function onFormSubmitHandler(e) {
-  // TODO(Day2, F-02): generateManagementId_ / assignStaff_ / calculateDueDate_ で新規行を埋めた後、
-  // notify.js で「新規受付」通知を送る。
+  var lock = LockService.getScriptLock();
+  var gotLock = lock.tryLock(30 * 1000);
+  if (!gotLock) {
+    recordLog_("新規受付処理", 1, LOG_RESULT.FAILURE, "他の処理と競合し、ロックを取得できませんでした。", DEFAULT_LOG_RETENTION_ROWS);
+    return;
+  }
+
+  try {
+    var range = e.range;
+    var sheet = range.getSheet();
+    var rowIndex = range.getRow();
+
+    var alreadyNotified = sheet.getRange(rowIndex, INQUIRY_COL.FIRST_NOTIFIED_AT).getValue();
+    if (alreadyNotified) {
+      return; // 冪等性: 既に初回通知済みの行は何もしない
+    }
+
+    var config = getConfig_();
+
+    var receivedAt = sheet.getRange(rowIndex, INQUIRY_COL.TIMESTAMP).getValue();
+    if (!(receivedAt instanceof Date)) receivedAt = new Date();
+    var name = sheet.getRange(rowIndex, INQUIRY_COL.NAME).getValue();
+    var type = sheet.getRange(rowIndex, INQUIRY_COL.TYPE).getValue();
+    var content = sheet.getRange(rowIndex, INQUIRY_COL.CONTENT).getValue();
+
+    var managementId = generateManagementId_(sheet, receivedAt);
+    var assignee = assignStaff_(type, config);
+    var dueDate = calculateDueDate_(receivedAt, type, config);
+
+    var placeholders = {
+      管理ID: managementId,
+      お名前: name,
+      種別: type,
+      内容: content,
+      対応期限: formatDateYmd_(dueDate),
+      担当者名: assignee.name,
+      シートURL: SpreadsheetApp.getActive().getUrl(),
+    };
+    // シートへの書き込みは、通知の送信（テンプレート取得を含む）が例外を投げずに終わってから
+    // まとめて1回で行う。先に書き込んでしまうと、テンプレート未設定などで例外が飛んだ場合に
+    // 管理ID・担当者だけ書き込まれ初回通知日時だけ空、という中途半端な行が残り、再実行時に
+    // 冪等性判定（J列）をすり抜けて管理IDが再採番されてしまう（要件定義書6.4章）。
+    sendNotification_(TEMPLATE_IDS.NEW_INQUIRY, assignee, placeholders, config);
+
+    var columnCount = INQUIRY_COL.FIRST_NOTIFIED_AT - INQUIRY_COL.MANAGEMENT_ID + 1;
+    sheet
+      .getRange(rowIndex, INQUIRY_COL.MANAGEMENT_ID, 1, columnCount)
+      .setValues([[managementId, STATUS.NOT_STARTED, assignee.name, dueDate, new Date()]]);
+
+    recordLog_("新規受付処理", 1, LOG_RESULT.SUCCESS, managementId + " を受け付けました（担当: " + assignee.name + "）。", config.logRetentionRows);
+  } catch (err) {
+    recordLog_("新規受付処理", 1, LOG_RESULT.FAILURE, String(err), DEFAULT_LOG_RETENTION_ROWS);
+  } finally {
+    lock.releaseLock();
+  }
 }
