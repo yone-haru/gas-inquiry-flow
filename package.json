@@ -2,6 +2,7 @@
   "name": "gas-inquiry-flow",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "問い合わせ管理・自動通知システム（Google Apps Script）",
   "scripts": {
     "dev": "clasp push --watch",
