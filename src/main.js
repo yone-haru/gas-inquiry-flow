@@ -80,10 +80,41 @@ function sendTestNotificationMenu() {
 }
 
 /**
- * カスタムメニュー「リマインドを今すぐ実行」の実体。Day3（reminder.js）で実装する。
+ * カスタムメニュー「リマインドを今すぐ実行」の実体。
+ * 毎朝のトリガーを待たずに手動で日次リマインド処理を実行する。
  */
 function runReminderNowMenu() {
-  SpreadsheetApp.getUi().alert(MENU_NAME, "この機能は Day3 で実装予定です（reminder.js）。", SpreadsheetApp.getUi().ButtonSet.OK);
+  var ui = SpreadsheetApp.getUi();
+  var result = runDailyReminder();
+  if (!result) {
+    ui.alert(MENU_NAME, "リマインド処理を実行しました。", ui.ButtonSet.OK);
+    return;
+  }
+  if (result.status === "success") {
+    ui.alert(
+      MENU_NAME,
+      "日次リマインド処理が完了しました。（通知対象: " + (result.count || 0) + "件）\n詳細は「実行ログ」シートを確認してください。",
+      ui.ButtonSet.OK
+    );
+  } else if (result.status === "interrupted") {
+    ui.alert(
+      MENU_NAME,
+      "データ件数が多いため途中で中断しました。1分後に自動的に続きを実行します。\n詳細は「実行ログ」シートを確認してください。",
+      ui.ButtonSet.OK
+    );
+  } else if (result.status === "lock_failed") {
+    ui.alert(
+      MENU_NAME,
+      "他の処理と競合したため実行できませんでした。少し待ってから再実行してください。",
+      ui.ButtonSet.OK
+    );
+  } else {
+    ui.alert(
+      MENU_NAME,
+      "リマインド処理中にエラーが発生しました。\n" + result.message + "\n詳細は「実行ログ」シートを確認してください。",
+      ui.ButtonSet.OK
+    );
+  }
 }
 
 /**

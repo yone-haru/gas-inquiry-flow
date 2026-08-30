@@ -75,6 +75,8 @@ const projectGlobals = {
   sendSlack_: "readonly",
   dispatchNotification_: "readonly",
   sendNotification_: "readonly",
+  sendComposedNotification_: "readonly",
+  notifyAdminOfSystemError_: "readonly",
   // setup.js
   getSheetOrThrow_: "readonly",
   runInitialSetup: "readonly",
@@ -87,6 +89,11 @@ const projectGlobals = {
   sendTestNotificationMenu: "readonly",
   runReminderNowMenu: "readonly",
   runDailyReminder: "readonly",
+  deleteContinuationTrigger_: "readonly",
+  resolveRecipientByName_: "readonly",
+  buildGroupedReminderData_: "readonly",
+  sendGroupedNotifications_: "readonly",
+  columnNumberToLetter_: "readonly",
 };
 
 /**

@@ -202,6 +202,9 @@ function onFormSubmitHandler(e) {
     recordLog_("新規受付処理", 1, LOG_RESULT.SUCCESS, managementId + " を受け付けました（担当: " + assignee.name + "）。", config.logRetentionRows);
   } catch (err) {
     recordLog_("新規受付処理", 1, LOG_RESULT.FAILURE, String(err), DEFAULT_LOG_RETENTION_ROWS);
+    if (typeof config !== "undefined" && config) {
+      notifyAdminOfSystemError_(config, "新規受付処理", String(err));
+    }
   } finally {
     lock.releaseLock();
   }

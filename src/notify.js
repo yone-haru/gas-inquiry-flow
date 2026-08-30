@@ -129,24 +129,23 @@ function dispatchNotification_(subject, body, recipient, config) {
 }
 
 /**
- * F-02/F-03/F-04 から呼ぶ通知送信の入口。テンプレート展開を行い、テストモード中は実送信せず
- * 送信予定の内容をログに記録するだけにする（要件定義書 F-06）。
- * @param {string} templateId TEMPLATE_IDS のいずれか
+ * 組み立て済みの件名・本文で通知を送信する（テストモード時は実送信せずログのみ記録）。
+ * 日次リマインドやエスカレーションなど、テンプレートの単純展開以外の文面で送信するときに使用する。
+ * @param {string} subject
+ * @param {string} body
  * @param {{name: string, email: string, slackMention: string}} recipient
- * @param {Object<string, string>} placeholderValues
  * @param {Object} config
+ * @param {string} [processName] ログに記録する処理名（デフォルト: "通知送信"）
  */
-function sendNotification_(templateId, recipient, placeholderValues, config) {
-  var template = getTemplate_(templateId);
-  var subject = expandTemplate_(template.subject, placeholderValues, config.logRetentionRows);
-  var body = expandTemplate_(template.body, placeholderValues, config.logRetentionRows);
+function sendComposedNotification_(subject, body, recipient, config, processName) {
+  var proc = processName || "通知送信";
 
   if (config.testMode) {
     recordLog_(
-      "通知送信(テストモード)",
+      proc + "(テストモード)",
       1,
       LOG_RESULT.SKIPPED,
-      "[" + templateId + "] 宛先: " + (recipient.email || "(メールアドレス無し)") + " / 件名: " + subject,
+      "宛先: " + (recipient.email || "(メールアドレス無し)") + " / 件名: " + subject,
       config.logRetentionRows
     );
     return;
@@ -162,10 +161,56 @@ function sendNotification_(templateId, recipient, placeholderValues, config) {
     })
     .join(", ");
   recordLog_(
-    "通知送信",
+    proc,
     1,
     allOk ? LOG_RESULT.SUCCESS : LOG_RESULT.FAILURE,
-    "[" + templateId + "] " + (summary || "送信対象なし（通知方法の設定を確認してください）"),
+    summary || "送信対象なし（通知方法の設定を確認してください）",
     config.logRetentionRows
   );
 }
+
+/**
+ * F-02/F-03/F-04 から呼ぶ通知送信の入口。テンプレート展開を行い、テストモード中は実送信せず
+ * 送信予定の内容をログに記録するだけにする（要件定義書 F-06）。
+ * @param {string} templateId TEMPLATE_IDS のいずれか
+ * @param {{name: string, email: string, slackMention: string}} recipient
+ * @param {Object<string, string>} placeholderValues
+ * @param {Object} config
+ */
+function sendNotification_(templateId, recipient, placeholderValues, config) {
+  var template = getTemplate_(templateId);
+  var subject = expandTemplate_(template.subject, placeholderValues, config.logRetentionRows);
+  var body = expandTemplate_(template.body, placeholderValues, config.logRetentionRows);
+
+  sendComposedNotification_(subject, body, recipient, config, "通知送信");
+}
+
+/**
+ * 管理者にシステムエラーを通知する。
+ * 要件定義書 6.5章: 管理者へのエラー通知は1日1通までに制限する。
+ * @param {Object} [config]
+ * @param {string} processName 処理名（例: "新規受付処理", "日次リマインド"）
+ * @param {string} message エラー内容
+ */
+function notifyAdminOfSystemError_(config, processName, message) {
+  if (!config || !config.adminEmail) return;
+
+  var todayStr = formatDateYmd_(new Date());
+  var props = PropertiesService.getScriptProperties();
+  var sentDate = props.getProperty(PROP_KEYS.ADMIN_ERROR_MAIL_SENT_DATE);
+  if (sentDate === todayStr) return;
+
+  // 1日1通制限のため、成否に関わらず日付を記録する
+  props.setProperty(PROP_KEYS.ADMIN_ERROR_MAIL_SENT_DATE, todayStr);
+
+  try {
+    MailApp.sendEmail(
+      config.adminEmail,
+      "【システムエラー】" + processName + "で問題が発生しました",
+      message
+    );
+  } catch {
+    // エラー通知の失敗は例外を外に投げない
+  }
+}
+
