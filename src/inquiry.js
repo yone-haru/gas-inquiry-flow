@@ -162,18 +162,23 @@ function onFormSubmitHandler(e) {
     var sheet = range.getSheet();
     var rowIndex = range.getRow();
 
-    var alreadyNotified = sheet.getRange(rowIndex, INQUIRY_COL.FIRST_NOTIFIED_AT).getValue();
+    // A〜J列（タイムスタンプ〜初回通知日時）を1回のgetValues()で一括取得する
+    // （要件定義書6.2章: ループの有無に関わらず、1セルずつのgetValue()は避ける）。
+    var readColumnCount = INQUIRY_COL.FIRST_NOTIFIED_AT - INQUIRY_COL.TIMESTAMP + 1;
+    var rowValues = sheet.getRange(rowIndex, INQUIRY_COL.TIMESTAMP, 1, readColumnCount).getValues()[0];
+
+    var alreadyNotified = rowValues[INQUIRY_COL.FIRST_NOTIFIED_AT - INQUIRY_COL.TIMESTAMP];
     if (alreadyNotified) {
       return; // 冪等性: 既に初回通知済みの行は何もしない
     }
 
     var config = getConfig_();
 
-    var receivedAt = sheet.getRange(rowIndex, INQUIRY_COL.TIMESTAMP).getValue();
+    var receivedAt = rowValues[INQUIRY_COL.TIMESTAMP - INQUIRY_COL.TIMESTAMP];
     if (!(receivedAt instanceof Date)) receivedAt = new Date();
-    var name = sheet.getRange(rowIndex, INQUIRY_COL.NAME).getValue();
-    var type = sheet.getRange(rowIndex, INQUIRY_COL.TYPE).getValue();
-    var content = sheet.getRange(rowIndex, INQUIRY_COL.CONTENT).getValue();
+    var name = rowValues[INQUIRY_COL.NAME - INQUIRY_COL.TIMESTAMP];
+    var type = rowValues[INQUIRY_COL.TYPE - INQUIRY_COL.TIMESTAMP];
+    var content = rowValues[INQUIRY_COL.CONTENT - INQUIRY_COL.TIMESTAMP];
 
     var managementId = generateManagementId_(sheet, receivedAt);
     var assignee = assignStaff_(type, config);
