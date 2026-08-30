@@ -82,7 +82,7 @@ docs/
 - `.mcp.json` の `antigravity` サーバーが使える場合、実装タスクは Claude Code が計画した上で `mcp__antigravity__delegate_task` でAntigravityに実行させてよい。Claude Codeは司令塔（計画・指示・検証）に徹し、実装（ファイル編集・コマンド実行）はAntigravity側に行わせる。
 - 流れ: (1) タスクをGitHub Issue化する（通常運用と同じ）→ (2) Issueの内容を具体的な指示文にして `delegate_task` に渡す（`directory` は必ずこのプロジェクトのルートに限定する）→ (3) 結果を鵜呑みにせず、Claude Code自身が `git diff`・変更ファイルの読み込み・`npm run lint` で独立に検証する（`delegate_task` のツール説明にもある通り、Antigravity自身の「成功しました」報告は検証にならない）→ (4) さらにverifierサブエージェントにも検証を依頼する → (5) 問題が見つかったら、軽微なものはClaude Codeが直接直し、実装方針から見直しが必要なものは指示を具体化して再度 `delegate_task` に投げ直す → (6) 問題なければコミット・push・`gh issue comment`+`close`。
 - `delegate_task` はシェルコマンドを確認なしで実行でき、ディレクトリにもサンドボックスされない強い権限を持つ。指示文は要件定義書のスコープ外（10章）・「やってはいけないこと」・列番号直書き禁止などの規約を明示的に含め、曖昧な指示で任せない。
-- 単純な調査や意見だけ欲しい場合は `ask_antigravity` を使う（実装はさせず、質問に答えてもらうだけ）。
+- 単純な調査や意見だけ欲しい場合は `ask_antigravity` を使う（実装はさせず、質問に答えてもらうだけ）。**`model` パラメータには `claude-sonnet-4-6`（利用可能なモデルは `list_antigravity_models` で確認）を指定すること。** Gemini系のデフォルトではなくClaudeモデルを使う、というのがユーザーの明示的な指示。
 - MCPサーバーが未接続（`ToolSearch` で見つからない）場合はこの節を使わず、Claude Codeが直接実装しverifierサブエージェントで検証する通常運用に戻る。
 
 <!-- 作業中の状態（作業中 / ブロッカー / 次のステップ等）はここに書かない:
