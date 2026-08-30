@@ -7,6 +7,23 @@ var CONFIG_INVALID_BG = "#f4cccc";
 var CONFIG_VALID_BG = "#ffffff";
 
 /**
+ * 「設定」シートB列のセル値を文字列に正規化する。
+ * `setValues()` で "TRUE"/"FALSE" という文字列を書き込んでも、Google スプレッドシート側が
+ * ユーザー入力と同様に自動認識し、実際には真偽値（boolean）型のセルになることがある
+ * （テストモードの初期値がまさにこれに該当する）。`getValues()` で読み戻すと `true`/`false` という
+ * JS の boolean が返り、素朴に `String()` すると "true"/"false"（小文字）になって
+ * "TRUE"/"FALSE" 前提の比較が壊れるため、ここで大文字の文字列に戻す。
+ * @param {*} cellValue
+ * @return {string}
+ */
+function normalizeConfigValue_(cellValue) {
+  if (typeof cellValue === "boolean") {
+    return cellValue ? "TRUE" : "FALSE";
+  }
+  return String(cellValue).trim();
+}
+
+/**
  * 設定キーごとのバリデータ。value は B列の文字列（空文字の可能性あり）。
  * 問題があればエラーメッセージの文字列を返す。問題なければ null を返す。
  */
@@ -141,7 +158,7 @@ function validateConfigSheet() {
   var rawConfig = {};
   for (var i = 0; i < values.length; i++) {
     var key = String(values[i][CONFIG_COL.KEY - 1]).trim();
-    var value = String(values[i][CONFIG_COL.VALUE - 1]).trim();
+    var value = normalizeConfigValue_(values[i][CONFIG_COL.VALUE - 1]);
     if (key) rawConfig[key] = value;
   }
 
@@ -151,7 +168,7 @@ function validateConfigSheet() {
 
   for (var r = 0; r < values.length; r++) {
     var rowKey = String(values[r][CONFIG_COL.KEY - 1]).trim();
-    var rowValue = String(values[r][CONFIG_COL.VALUE - 1]).trim();
+    var rowValue = normalizeConfigValue_(values[r][CONFIG_COL.VALUE - 1]);
     var validator = validators[rowKey];
     var bg = CONFIG_VALID_BG;
     if (validator) {
@@ -193,7 +210,7 @@ function getConfig_() {
   var raw = {};
   for (var i = 0; i < values.length; i++) {
     var key = String(values[i][CONFIG_COL.KEY - 1]).trim();
-    var value = String(values[i][CONFIG_COL.VALUE - 1]).trim();
+    var value = normalizeConfigValue_(values[i][CONFIG_COL.VALUE - 1]);
     if (key) raw[key] = value;
   }
 
