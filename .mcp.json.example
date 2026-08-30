@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "antigravity": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/path/to/antigravity-mcp/index.js"
+      ],
+      "env": {}
+    }
+  }
+}

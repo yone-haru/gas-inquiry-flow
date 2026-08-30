@@ -17,3 +17,10 @@ build/
 # clasp（scriptIdは秘密情報ではないが環境固有のため各自 clasp create/clone で生成する）
 .clasp.json
 .claspignore
+
+# MCPサーバー定義（ローカルの実行パスを含み環境固有のため。.mcp.json.example を参考に各自作成する）
+.mcp.json
+
+# Claude Code のループ用作業ファイル（空のテンプレートのままコミットされやすいため）
+.claude/plan.md
+.claude/loop-result.md
