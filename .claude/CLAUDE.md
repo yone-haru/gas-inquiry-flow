@@ -1,6 +1,6 @@
 # 問い合わせ管理・自動通知システム（GAS）
 
-> Google フォーム→スプレッドシートの問い合わせ対応を自動化する Google Apps Script。中小企業の非エンジニア担当者向けに、通知・リマインド・エスカレーションを自動化する。ポートフォリオとして GitHub 公開する（詳細: `requirements-gas-inquiry-flow.md`）。
+> Google フォーム→スプレッドシートの問い合わせ対応を自動化する Google Apps Script。中小企業の非エンジニア担当者向けに、通知・リマインド・エスカレーションを自動化する（詳細: `docs/design.md`）。
 
 ## 技術スタック
 - 言語: JavaScript（GAS / V8ランタイム）。TypeScript化はしない（要件定義書6章: clasp のビルドが複雑になり非エンジニア閲覧者のハードルが上がるため）
